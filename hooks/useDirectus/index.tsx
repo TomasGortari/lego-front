@@ -3,6 +3,7 @@ import { ITag } from '../../@types/tag';
 import { IAnnouncement } from '../../@types/announcement';
 import { API_URL } from '../../config/config';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { IBooking } from '../../@types/booking';
 type BlogSettings = {
   display_promotions: boolean;
 };
@@ -11,6 +12,7 @@ export type IMyCollections = {
   announcement: IAnnouncement;
   settings: BlogSettings;
   tag: ITag;
+  booking: IBooking;
 };
 
 const useDirectus = () => {

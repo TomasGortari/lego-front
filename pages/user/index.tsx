@@ -32,11 +32,20 @@ import {
   NumberInputField,
   Textarea,
   Badge,
+  Stack,
+  InputRightAddon,
+  InputGroup,
 } from '@chakra-ui/react';
 
 import { useQuery, useMutation } from 'react-query';
 
-import { Directus, PartialItem, UserItem } from '@directus/sdk';
+import {
+  Directus,
+  FileItem,
+  OneItem,
+  PartialItem,
+  UserItem,
+} from '@directus/sdk';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -47,6 +56,13 @@ import { API_URL } from '../../config/config';
 import useDirectus, { IMyCollections } from '../../hooks/useDirectus';
 import Section from '../../components/Section';
 import { ITag } from '../../@types/tag';
+import { CloseIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
+import axios from 'axios';
+import { IFile } from '../../@types/file';
+import slugify from '../../utils/slugify';
+import { set } from 'lodash';
+import ModalForm from '../../components/user/ModalForm';
+import AnnouncementCard from '../../components/AnnouncementCard';
 
 const MySpace = () => {
   const directus = useDirectus();
@@ -120,6 +136,31 @@ const MySpace = () => {
     }
   );
 
+  const {
+    mutate: updateAnnouncement,
+    // isLoading,
+    // isError,
+  } = useMutation(
+    'updateUser',
+    () => (directus as Directus<IMyCollections>)?.users.me.update(infos),
+    {
+      onSuccess: (data) => {
+        reCurrentUser();
+        toast({
+          status: 'success',
+          title: 'Données personnel mis à jour avec succès',
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          status: 'error',
+          title:
+            "Une erreur est survenue, les données n'ont pas pu être mis à jour",
+        });
+      },
+    }
+  );
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (
@@ -129,8 +170,6 @@ const MySpace = () => {
       updateUser();
     }
   };
-
-  console.log(currentUser, infos);
 
   return (
     <Box>
@@ -198,173 +237,174 @@ const MySpace = () => {
   );
 };
 
-const ModalForm = (props: { isOpen: boolean; onClose: () => void }) => {
-  const { isOpen, onClose } = props;
-  const toast = useToast();
+const MyAnnouncement = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const directus = useDirectus();
-  const [infos, setInfos] = useState({
-    name: '',
-    quantity: '',
-    description: '',
-    price: null,
-    tags: [],
-  });
-  const [searchTag, setSearchTag] = useState('');
-  const [newTag, setNewTag] = useState('');
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-  };
-  const { data: tags, refetch: refetchTags } = useQuery(
-    ['getTags', directus, searchTag],
+  const {
+    data: currentUser,
+    isLoading,
+    // refetch: reCurrentUser,
+    isError,
+  } = useQuery(
+    ['getMe', directus],
     () =>
-      (directus as Directus<IMyCollections>)
-        ?.items('tags')
-        .readByQuery({
-          fields: ['name'],
-          filter:
-            searchTag !== ''
-              ? {
-                  name: {
-                    _contains: searchTag.toLowerCase(),
-                  },
-                }
-              : {},
-          limit: 20,
-        })
-        .then((res) => res.data)
-  );
-
-  const { mutate: createTag } = useMutation(
-    'createTag',
-    () =>
-      (directus as Directus<IMyCollections>).items('tags').createOne({
-        name: newTag.toLowerCase(),
+      directus?.users.me.read({
+        fields: ['id', 'email', 'avatar', 'first_name', 'last_name'],
       }),
     {
-      onSuccess: () => {
-        toast({
-          status: 'success',
-          title:
-            "Votre tag a bel est bien été crée rechercher pour les sélctionner à l'aide de la barre de recherche",
-        });
-        setNewTag('');
-        refetchTags();
-      },
-      onError: () => {
-        toast({
-          status: 'error',
-          title: 'Une erreur est survenue lors de la cration de votre tag',
-        });
-      },
+      enabled: Boolean(directus?.auth.token) && Boolean(directus),
     }
   );
 
-  console.log(tags);
-
-  return (
-    <Modal size="5xl" isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Création d'annonce</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Box>
-            <FormControl mb={5}>
-              <FormLabel fontWeight="semibold">Nom du produit </FormLabel>
-              <Input
-                value={infos.name}
-                onChange={(e) => setInfos({ ...infos, name: e.target.value })}
-              />
-            </FormControl>
-            <FormControl mb={5}>
-              <FormLabel fontWeight="semibold">
-                Nombre d'exemplaire du produit
-              </FormLabel>
-              <Input
-                type="number"
-                value={infos.quantity}
-                onChange={(e) =>
-                  setInfos({ ...infos, quantity: e.target.value })
-                }
-              ></Input>
-            </FormControl>
-            <FormControl mb={5}>
-              <FormLabel fontWeight="semibold">
-                Description du produit
-              </FormLabel>
-              <Textarea
-                value={infos.description}
-                onChange={(e) =>
-                  setInfos({ ...infos, description: e.target.value })
-                }
-              ></Textarea>
-            </FormControl>
-            <FormControl>
-              <FormLabel fontWeight="semibold">
-                Tags à associer aux produit
-              </FormLabel>
-              <Box m="auto" width="container.md">
-                <Input
-                  placeholder="Rechercher tags"
-                  value={searchTag}
-                  onChange={(e) => setSearchTag(e.target.value)}
-                />
-                <Box mt={5} spacing={3} columns={{ base: 2, sm: 3, md: 4 }}>
-                  <Flex my={3}>
-                    {(tags as PartialItem<ITag>[])?.map((tag, key) => (
-                      <Badge
-                        ml={2}
-                        borderRadius="2xl"
-                        w="min-content"
-                        p={2}
-                        key={key}
-                        colorScheme="primary"
-                      >
-                        {tag.name}
-                      </Badge>
-                    ))}
-                  </Flex>
-                  <Text fontWeight="semibold">Ajouter un nouveau tag</Text>
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                  />
-                  <Button
-                    width="75px"
-                    onClick={() => {
-                      if (newTag !== '') createTag();
-                    }}
-                    colorScheme="secondary"
-                  >
-                    Ajouter{' '}
-                  </Button>
-                </Box>
-              </Box>
-            </FormControl>
-          </Box>
-        </ModalBody>
-
-        <ModalFooter>
-          <Button colorScheme="secondary" type="submit">
-            Créer mon annonce
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+  const { data: announcements, refetch: fetchAnnouncements } = useQuery(
+    'getAnnouncements',
+    () =>
+      directus
+        ?.items('announcement')
+        .readByQuery({
+          fields: ['*.*.*'],
+          filter: {
+            user: {
+              id: {
+                _eq: currentUser?.id,
+              },
+            },
+          },
+        })
+        .then((res) => res.data),
+    {
+      enabled: Boolean(currentUser),
+    }
   );
-};
 
-const MyAnnouncement = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const deleteAnnouncement = async (id: number) => {
+    await directus?.items('announcement').deleteOne(id as number);
+    fetchAnnouncements();
+  };
 
   return (
     <Box>
-      <ModalForm isOpen={isOpen} onClose={onClose} />
-      <Heading color="primary.500">Mes annonces</Heading>
-      <Button onClick={onOpen} mt={5} colorScheme="secondary">
-        Créer une nouvelle annonce
-      </Button>
+      <ModalForm
+        fetchAnnouncements={fetchAnnouncements}
+        isOpen={isOpen}
+        onClose={onClose}
+      />
+      <Flex mb={10} alignItems="flex-end">
+        <Heading color="primary.500">Mes annonces</Heading>
+        <Button ml={10} onClick={onOpen} mt={5} colorScheme="secondary">
+          Créer une nouvelle annonce
+        </Button>
+      </Flex>
+      <SimpleGrid as={Container} maxW="container.md" spacing={10} columns={1}>
+        {currentUser &&
+          announcements?.map((announcement) => (
+            <Box position="relative">
+              <AnnouncementCard announcement={announcement} />
+              {currentUser?.email ===
+                (announcement?.user as PartialItem<IUser>).email && (
+                <Flex position="absolute" top="0" right="0" p={5}>
+                  <EditIcon
+                    cursor="pointer"
+                    color="primary.500"
+                    // onClick={
+                    //   () =>
+                    //   updateAnnouncement(announcement.id as number)
+                    // }
+                  />
+                  <DeleteIcon
+                    cursor="pointer"
+                    color="red"
+                    onClick={() =>
+                      deleteAnnouncement(announcement.id as number)
+                    }
+                  />
+                </Flex>
+              )}
+            </Box>
+          ))}
+      </SimpleGrid>
+    </Box>
+  );
+};
+
+const MyBookings = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const directus = useDirectus();
+
+  const {
+    data: currentUser,
+    isLoading,
+    // refetch: reCurrentUser,
+    isError,
+  } = useQuery(
+    ['getMe', directus],
+    () =>
+      directus?.users.me.read({
+        fields: ['id', 'email', 'avatar', 'first_name', 'last_name'],
+      }),
+    {
+      enabled: Boolean(directus?.auth.token) && Boolean(directus),
+    }
+  );
+
+  const { data: bookings, refetch: fetchBookings } = useQuery(
+    'getBookings',
+    () =>
+      directus
+        ?.items('booking')
+        .readByQuery({
+          fields: ['*.*.*'],
+          filter: {
+            buyer: {
+              id: {
+                _eq: currentUser?.id,
+              },
+            },
+          },
+        })
+        .then((res) => res.data),
+    {
+      enabled: Boolean(currentUser),
+    }
+  );
+  console.log(bookings);
+
+  return (
+    <Box>
+      <Flex mb={10} alignItems="flex-end">
+        <Heading color="primary.500">Mes commandes</Heading>
+      </Flex>
+      <SimpleGrid as={Container} maxW="container.md" spacing={10} columns={1}>
+        {currentUser &&
+          bookings?.map((booking) => (
+            <SimpleGrid
+              spacing={5}
+              columns={{ base: 1, md: 2 }}
+              boxShadow="xl"
+              p={3}
+              fontWeight="semibold"
+            >
+              <Text>Nom produit: {booking.name}</Text>
+              <Text>Quantité: x{booking.quantity}</Text>
+              <Text>Prix: {booking.price_unity}€</Text>
+              <Text>
+                Vendeur: {(booking.seller as PartialItem<IUser>).first_name}{' '}
+                {(booking.seller as PartialItem<IUser>).last_name}
+              </Text>
+              <Text>
+                État de la réservation:{' '}
+                {
+                  {
+                    process: 'Non aboutie',
+                    cancel: 'Annulé',
+                    validate: 'Validé',
+                  }[booking.status as string]
+                }
+              </Text>
+            </SimpleGrid>
+          ))}
+      </SimpleGrid>
     </Box>
   );
 };
@@ -410,6 +450,9 @@ const User = () => {
           </Section>
           <Section>
             <MyAnnouncement />
+          </Section>
+          <Section>
+            <MyBookings />
           </Section>
         </Container>
       )}

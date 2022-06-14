@@ -20,7 +20,8 @@ import Section from '../../../components/Section';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import H1 from '../../../components/H1';
-import useDirectus from '../../../hooks/useDirectus';
+import useDirectus, { IMyCollections } from '../../../hooks/useDirectus';
+import { Directus } from '@directus/sdk';
 
 const Header = () => (
   <Flex
@@ -37,6 +38,7 @@ const Header = () => (
 
 const SignIn = () => {
   const router = useRouter();
+  const { announcementId, sellerId } = router.query;
   const [infos, setInfos] = useState({ email: '', password: '' });
   const directus = useDirectus();
   useEffect(() => {
@@ -63,21 +65,37 @@ const SignIn = () => {
     mutate: login,
     isLoading,
     isError,
-  } = useMutation('login', (data: any) => directus.auth.login(infos), {
-    onSuccess: (data) => {
-      toast({ status: 'success', title: 'Connexion réussie !' });
-      setInfos({ email: '', password: '' });
-      router.push('/user');
-    },
-    onError: (err: any) => {
-      console.log(err.message === 'Invalid user credentials.');
-      if (err.message === 'Invalid user credentials.') {
-        toast({ status: 'error', title: 'Email ou Mot de passe incorrect' });
-      } else {
-        toast({ status: 'error', title: 'Oups une erreur est survenue' });
-      }
-    },
-  });
+  } = useMutation(
+    'login',
+    (data: any) => (directus as Directus<IMyCollections>)?.auth.login(infos),
+    {
+      onSuccess: async (data) => {
+        toast({ status: 'success', title: 'Connexion réussie !' });
+        setInfos({ email: '', password: '' });
+        if (announcementId && sellerId) {
+          const currentUser = await (
+            directus as Directus<IMyCollections>
+          )?.users.me.read({
+            fields: ['id'],
+          });
+          router.push(
+            `/booking/${announcementId}?buyerId=${currentUser?.id}&sellerId=${sellerId}`
+          );
+        }
+        if (!announcementId || !sellerId) {
+          router.push('/user');
+        }
+      },
+      onError: (err: any) => {
+        console.log(err.message === 'Invalid user credentials.');
+        if (err.message === 'Invalid user credentials.') {
+          toast({ status: 'error', title: 'Email ou Mot de passe incorrect' });
+        } else {
+          toast({ status: 'error', title: 'Oups une erreur est survenue' });
+        }
+      },
+    }
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -96,7 +114,14 @@ const SignIn = () => {
       >
         <Text>
           Pas encore inscrit ?{' '}
-          <NextLink href="/auth/signup" passHref>
+          <NextLink
+            href={
+              announcementId && sellerId
+                ? `/auth/signup?announcementId=${announcementId}&sellerId=${sellerId}`
+                : '/auth/signup'
+            }
+            passHref
+          >
             <chakra.a
               _hover={{ textDecoration: 'underline' }}
               color="primary.500"

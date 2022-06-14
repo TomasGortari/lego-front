@@ -23,9 +23,11 @@ import NextLink from 'next/link';
 import Section from '../../../components/Section';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useDirectus } from '../../../hooks/useDirectus';
+import useDirectus from '../../../hooks/useDirectus';
 import H1 from '../../../components/H1';
 import { InfoOutlineIcon } from '@chakra-ui/icons';
+import { PartialItem } from '@directus/sdk';
+import { IUser } from '../../../@types/user';
 
 const Header = () => (
   <Flex
@@ -41,16 +43,17 @@ const Header = () => (
 );
 
 const SignUp = () => {
+  const directus = useDirectus();
   const router = useRouter();
   const [infos, setInfos] = useState({
     email: '',
     password: '',
     confirmPassword: '',
   });
-  const directus = useDirectus();
+  const { announcementId, sellerId } = router.query;
 
   useEffect(() => {
-    if (directus.auth?.token) {
+    if (directus?.auth?.token) {
       router.push('/user');
     }
   }, []);
@@ -69,7 +72,7 @@ const SignUp = () => {
         role: ROLE_AUTHENTICATED_ID,
       }),
     {
-      onSuccess: (data) => {
+      onSuccess: () => {
         toast({
           status: 'success',
           duration: null,
@@ -78,6 +81,11 @@ const SignUp = () => {
             'Votre compte a été bien crée vous pouvez des à présent vous connecter',
         });
         setInfos({ email: '', password: '', confirmPassword: '' });
+        if (announcementId && sellerId) {
+          router.push(
+            `/auth/login?announcementId=${announcementId}&sellerId=${sellerId}`
+          );
+        }
         router.push('/auth/login');
       },
       onError: (err: any) => {
@@ -136,7 +144,14 @@ const SignUp = () => {
       >
         <Text>
           Vous êtes déjà inscrit ?{' '}
-          <NextLink href="/auth/login" passHref>
+          <NextLink
+            href={
+              announcementId && sellerId
+                ? `/auth/login?announcementId=${announcementId}&sellerId=${sellerId}`
+                : '/auth/login'
+            }
+            passHref
+          >
             <chakra.a
               _hover={{ textDecoration: 'underline' }}
               color="primary.500"

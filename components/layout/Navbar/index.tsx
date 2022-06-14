@@ -27,11 +27,13 @@ import NextLink from 'next/link';
 import useDirectus, { IMyCollections } from '../../../hooks/useDirectus';
 import { useMutation, useQueryClient } from 'react-query';
 import { Directus } from '@directus/sdk';
+import { useRouter } from 'next/router';
 
 const Navbar = () => {
   const { isOpen, onToggle } = useDisclosure();
   const directus = useDirectus();
-  const queryClient = useQueryClient();
+  const router = useRouter();
+
   const { mutate: logout } = useMutation('logout', () =>
     (directus as Directus<IMyCollections>)?.auth.logout()
   );
@@ -54,6 +56,7 @@ const Navbar = () => {
           display={{ base: 'flex', md: 'none' }}
         >
           <IconButton
+            colorScheme="primary"
             onClick={onToggle}
             icon={
               isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
@@ -111,7 +114,13 @@ const Navbar = () => {
             </>
           )}
           {directus?.auth?.token && (
-            <Button colorScheme="red" onClick={() => logout()}>
+            <Button
+              colorScheme="red"
+              onClick={() => {
+                logout();
+                router.push('/');
+              }}
+            >
               Deconnexion
             </Button>
           )}
