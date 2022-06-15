@@ -63,6 +63,7 @@ import slugify from '../../utils/slugify';
 import { set } from 'lodash';
 import ModalForm from '../../components/user/ModalForm';
 import AnnouncementCard from '../../components/AnnouncementCard';
+import { IAnnouncement } from '../../@types/announcement';
 
 const MySpace = () => {
   const directus = useDirectus();
@@ -113,31 +114,6 @@ const MySpace = () => {
 
   const {
     mutate: updateUser,
-    // isLoading,
-    // isError,
-  } = useMutation(
-    'updateUser',
-    () => (directus as Directus<IMyCollections>)?.users.me.update(infos),
-    {
-      onSuccess: (data) => {
-        reCurrentUser();
-        toast({
-          status: 'success',
-          title: 'Données personnel mis à jour avec succès',
-        });
-      },
-      onError: (err: any) => {
-        toast({
-          status: 'error',
-          title:
-            "Une erreur est survenue, les données n'ont pas pu être mis à jour",
-        });
-      },
-    }
-  );
-
-  const {
-    mutate: updateAnnouncement,
     // isLoading,
     // isError,
   } = useMutation(
@@ -240,6 +216,9 @@ const MySpace = () => {
 const MyAnnouncement = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const directus = useDirectus();
+  const [currentAnnouncement, setCurrentAnnouncement] =
+    useState<PartialItem<IAnnouncement> | null>(null);
+  const [requestType, setRequestType] = useState<'create' | 'update'>('create');
 
   const {
     data: currentUser,
@@ -283,16 +262,45 @@ const MyAnnouncement = () => {
     fetchAnnouncements();
   };
 
+  const createButtonClick = () => {
+    if (requestType === 'update') {
+      setRequestType('create');
+    }
+    if (announcements) {
+      setCurrentAnnouncement(null);
+    }
+    onOpen();
+  };
+  const updateButtonClick = (announcement: PartialItem<IAnnouncement>) => {
+    if (requestType === 'create') {
+      setRequestType('update');
+    }
+
+    if (!currentAnnouncement) {
+      setCurrentAnnouncement(announcement);
+    }
+    onOpen();
+  };
+
   return (
     <Box>
       <ModalForm
         fetchAnnouncements={fetchAnnouncements}
         isOpen={isOpen}
         onClose={onClose}
+        type={requestType}
+        announcement={currentAnnouncement}
       />
       <Flex mb={10} alignItems="flex-end">
         <Heading color="primary.500">Mes annonces</Heading>
-        <Button ml={10} onClick={onOpen} mt={5} colorScheme="secondary">
+        <Button
+          h={{ base: 'auto', sm: '2.5rem' }}
+          ml={10}
+          onClick={createButtonClick}
+          mt={5}
+          colorScheme="secondary"
+          whiteSpace="normal"
+        >
           Créer une nouvelle annonce
         </Button>
       </Flex>
@@ -305,12 +313,10 @@ const MyAnnouncement = () => {
                 (announcement?.user as PartialItem<IUser>).email && (
                 <Flex position="absolute" top="0" right="0" p={5}>
                   <EditIcon
+                    mx={3}
                     cursor="pointer"
                     color="primary.500"
-                    // onClick={
-                    //   () =>
-                    //   updateAnnouncement(announcement.id as number)
-                    // }
+                    onClick={() => updateButtonClick(announcement)}
                   />
                   <DeleteIcon
                     cursor="pointer"

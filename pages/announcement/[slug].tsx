@@ -28,6 +28,7 @@ import Carousel from '../../components/Carousel';
 import Tags from '../../components/Tags';
 import { useQuery } from 'react-query';
 import useDirectus from '../../hooks/useDirectus';
+import Section from '../../components/Section';
 
 const AnnouncementContent = (props: {
   announcement: PartialItem<IAnnouncement>;
@@ -105,7 +106,6 @@ const AnnouncementContent = (props: {
 const UserContact = (props: {
   user: PartialItem<IUser>;
   announcementId: number;
-  sellerId: string;
 }) => {
   const directus = useDirectus();
   const { user } = props;
@@ -120,7 +120,7 @@ const UserContact = (props: {
     }
   );
   return (
-    <Box
+    <Section
       ml={{ base: 0, lg: 5 }}
       h="min-content"
       w="350px"
@@ -158,14 +158,14 @@ const UserContact = (props: {
           Acheter
         </Button>
       )}
-    </Box>
+    </Section>
   );
 };
 
 const Announcement = (props: { announcement: PartialItem<IAnnouncement> }) => {
   return (
     <Container maxW="container.lg">
-      <Flex>
+      <Flex flexDirection={{ base: 'column-reverse', lg: 'row' }}>
         <AnnouncementContent announcement={props.announcement} />
         <UserContact
           announcementId={props.announcement.id as number}

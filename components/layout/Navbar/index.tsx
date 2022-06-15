@@ -42,9 +42,10 @@ const Navbar = () => {
       <Flex
         bg={useColorModeValue('gray.50', 'gray.900')}
         color="white"
+        justifyContent="space-between"
         minH="60px"
         py={{ base: 2 }}
-        px={{ base: 4 }}
+        px={{ base: 0, lg: 4 }}
         borderBottom={1}
         borderStyle={'solid'}
         borderColor={useColorModeValue('gray.200', 'gray.900')}
@@ -82,6 +83,7 @@ const Navbar = () => {
           justify={'flex-end'}
           direction={'row'}
           spacing={6}
+          px={0}
           alignItems="center"
         >
           {directus?.auth?.token === null && (
@@ -115,6 +117,7 @@ const Navbar = () => {
           )}
           {directus?.auth?.token && (
             <Button
+              size="sm"
               colorScheme="red"
               onClick={() => {
                 logout();

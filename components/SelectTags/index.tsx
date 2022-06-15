@@ -80,6 +80,12 @@ const SelectTags = (props: {
       enabled: props?.tags?.length > 0,
     }
   );
+  console.log(
+    'selectedededededede',
+    tagsSelected,
+    'tagstagstagstgats',
+    props.tags
+  );
 
   const { mutate: createTag } = useMutation(
     'createTag',

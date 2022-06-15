@@ -60,8 +60,8 @@ const Product = (props: {
 
   return (
     <Box mr={5} boxShadow="xl" p={3} mt={5}>
-      <Flex alignItems="center">
-        <Box overflow="hidden" borderRadius="2xl">
+      <Flex flexDirection={{ base: 'column', md: 'row' }} alignItems="center">
+        <Box minH="150px" minW="250px" overflow="hidden" borderRadius="2xl">
           <Image
             h="100%"
             w="100%"
@@ -211,7 +211,11 @@ const Booking = (props: { announcement: IAnnouncement }) => {
 
   return (
     <chakra.form onSubmit={handleSubmit}>
-      <Flex as={Container} maxW="container.md">
+      <Flex
+        flexDirection={{ base: 'column', md: 'row' }}
+        as={Container}
+        maxW="container.md"
+      >
         <Product
           quantity={quantity}
           maxQuantity={props.announcement.quantity}

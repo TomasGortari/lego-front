@@ -69,7 +69,7 @@ const Confirmation = () => {
   return (
     <Box>
       <Header />
-      <Section textAlign="center">
+      <Section p={10} textAlign="center">
         {statusBooking === 'success' && (
           <>
             <Heading>Votre achat est confirmé !</Heading>

@@ -39,6 +39,7 @@ const AnnouncementCard = (props: {
           }
           borderRadius="2xl"
           w={{ base: '100%', md: '40%' }}
+          minH="200px"
         >
           {Boolean((announcement.gallery as IGallery[])[0]) ? (
             <Image
@@ -59,6 +60,17 @@ const AnnouncementCard = (props: {
         <Box ml={5} w={{ base: '100%', md: '60%' }}>
           <Text mr={10} fontWeight="semibold">
             {announcement.name}
+          </Text>
+          <Text>
+            {`${
+              (announcement.user as PartialItem<IUser>).first_name &&
+              (announcement.user as PartialItem<IUser>).last_name
+                ? `${(announcement.user as PartialItem<IUser>).first_name} ${
+                    (announcement.user as PartialItem<IUser>).last_name
+                  }`
+                : (announcement.user as PartialItem<IUser>).email
+            } 
+            `}{' '}
           </Text>
           {announcement.tags && (
             <Tags
