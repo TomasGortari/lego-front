@@ -71,7 +71,7 @@ const Product = (props: {
           />
         </Box>
 
-        <Box maxW="200px">
+        <Box ml={{ base: 0, lg: 10 }} maxW="200px">
           <Text>
             Disponibles:{' '}
             <chakra.strong fontSize="xl">{props.maxQuantity}</chakra.strong>{' '}
@@ -123,12 +123,12 @@ const RecapCard = (props: {
       p={3}
       boxShadow="xl"
     >
-      <Flex alignItems="center">
+      <Box>
         <Text my={5}>
           {props.quantity} x {props.name}
         </Text>
         <Text fontWeight="bold">{props.price} EUR </Text>
-      </Flex>
+      </Box>
       <Button type="submit" colorScheme="secondary">
         Acheter
       </Button>
@@ -146,7 +146,6 @@ const Booking = (props: { announcement: IAnnouncement }) => {
   const { mutate: checkoutSessions, data: bookingData } = useMutation(
     'checkoutSessions',
     (booking: PartialItem<IBooking>) => {
-      console.log('bookingdata', booking);
       return axios.post(`/api/checkout_sessions`, {
         method: 'POST',
         headers: {
@@ -159,7 +158,6 @@ const Booking = (props: { announcement: IAnnouncement }) => {
 
   useEffect(() => {
     if (bookingData) {
-      console.log(bookingData);
       window.location.href = (bookingData as any).data.url;
     }
   }, [bookingData]);
@@ -175,7 +173,6 @@ const Booking = (props: { announcement: IAnnouncement }) => {
       }),
     {
       onSuccess: (data) => {
-        console.log(data?.price_unity);
         if (data?.id) {
           checkoutSessions(data);
         }
@@ -205,7 +202,6 @@ const Booking = (props: { announcement: IAnnouncement }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('preprice', props.announcement.price);
     createBooking();
   };
 

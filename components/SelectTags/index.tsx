@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { Directus, PartialItem } from '@directus/sdk';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'react-query';
 import { ITag } from '../../@types/tag';
 import useDirectus, { IMyCollections } from '../../hooks/useDirectus';
@@ -77,14 +77,9 @@ const SelectTags = (props: {
         })
         .then((res) => res.data),
     {
+      retry: 2,
       enabled: props?.tags?.length > 0,
     }
-  );
-  console.log(
-    'selectedededededede',
-    tagsSelected,
-    'tagstagstagstgats',
-    props.tags
   );
 
   const { mutate: createTag } = useMutation(
@@ -171,22 +166,24 @@ const SelectTags = (props: {
           cursor="pointer"
           title="Voir les tags selectionnés"
         >
-          <Text>Sélectionnés</Text>
           {(tagsSelected as PartialItem<ITag>[])?.length > 0 && (
-            <Flex
-              color={hoverSelected ? 'white' : 'black'}
-              bgColor={hoverSelected ? 'black' : 'white'}
-              alignItems="center"
-              justifyContent="center"
-              top="-2"
-              right="-6"
-              position="absolute"
-              h="25px"
-              w="25px"
-              borderRadius="full"
-            >
-              {tagsSelected?.length}
-            </Flex>
+            <>
+              <Text>Sélectionnés</Text>
+              <Flex
+                color={hoverSelected ? 'white' : 'black'}
+                bgColor={hoverSelected ? 'black' : 'white'}
+                alignItems="center"
+                justifyContent="center"
+                top="-2"
+                right="-6"
+                position="absolute"
+                h="25px"
+                w="25px"
+                borderRadius="full"
+              >
+                {tagsSelected?.length}
+              </Flex>
+            </>
           )}
         </Box>
       </Flex>

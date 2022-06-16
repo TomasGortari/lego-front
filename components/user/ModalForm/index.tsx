@@ -47,10 +47,16 @@ const ModalForm = (props: {
   const { isOpen, onClose } = props;
   const toast = useToast();
   const directus = useDirectus();
+  const [createFilesIds, setCreateFilesIds] = useState<string[]>([]);
+  const [deleteGalleryIds, setDeleteGalleryIds] = useState<number[]>([]);
+  const [createTagsIds, setCreateTagsIds] = useState<number[]>([]);
+  const [deleteTagsIds, setDeleteTagsIds] = useState<number[]>([]);
   const defaultInfos = useMemo(
     () => ({
       id: props.announcement?.id || null,
-
+      galleryIds: props.announcement
+        ? props.announcement?.gallery?.map((x) => (x as IGallery).id)
+        : [],
       gallery:
         (props.announcement?.gallery as IGallery[])?.map(
           (res) =>
@@ -85,7 +91,7 @@ const ModalForm = (props: {
       enabled: Boolean(directus?.auth?.token),
     }
   );
-  console.log('infosfofofof', infos, 'defaultInfos', defaultInfos);
+
   const queryClient = useQueryClient();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -127,6 +133,7 @@ const ModalForm = (props: {
           ...infos,
           gallery: [...infos.gallery, ...values.map((value) => value.src)],
         });
+        setCreateFilesIds(values.map((value) => value.id));
         return values.map((value) => value.id);
       })
   );
@@ -178,53 +185,29 @@ const ModalForm = (props: {
     }
   );
 
-  const handleUpdateGallery = () => {
-    let res;
-    if ((props.announcement as any)?.gallery.length < infos.gallery.length) {
-      res = {
-        create: galleryIds?.map((id) => ({
-          announcement_id: infos.id as number,
-          directus_files_id: id,
-        })),
-      };
-    } else if (
-      (props.announcement as any)?.gallery.length > infos.gallery.length
-    ) {
-      // const stateGalleryIds =
-      console.log(
-        'gallery',
-        (props.announcement as PartialItem<IAnnouncement>)
-          .gallery as IGallery[],
-        galleryIds
-      );
-      res = {
-        delete: (
-          (props.announcement as PartialItem<IAnnouncement>)
-            .gallery as IGallery[]
-        ).some(
-          (res) =>
-            !galleryIds?.includes(
-              (res.directus_files_id as PartialItem<IFile>).id as string
-            )
-        ),
+  const handleUpdateGallery = () => ({
+    create: createFilesIds?.map((id) => ({
+      announcement_id: (infos.id as number)?.toString() as string,
+      directus_files_id: id,
+    })),
+    update: [],
+    delete: deleteGalleryIds,
+  });
 
-        // .map(res => (res.directus_files_id as PartialItem<IFile>).)
-        //  galleryIds?.filter(
-        //       (idState) =>
-        //         !((props.announcement as PartialItem<IAnnouncement>).gallery as IGallery[])
-        //           .map(
-        //             (res) =>
-        //               (res.directus_files_id as PartialItem<IFile>).id as string
-        //           )
-        //           .includes(idState)
-        //     )?.map((filtered) => filtered.id as number),
-      };
-    }
-
-    return res;
-  };
-
-  console.log(handleUpdateGallery());
+  const handleUpdateTags = () => ({
+    create: createTagsIds.map((tagId) => ({
+      announcement_id: (infos.id as number)?.toString() as string,
+      tags_id: tagId,
+    })),
+    update: [],
+    delete: deleteTagsIds
+      ?.map((tagId) =>
+        (props.announcement?.tags as PartialItem<ITagAnnounce>[]).find(
+          (tagAnnounce) => (tagAnnounce.tags_id as ITag).id === tagId
+        )
+      )
+      .map((tagAnnounce) => (tagAnnounce as PartialItem<ITagAnnounce>).id),
+  });
 
   const { mutate: updateAnnouncement } = useMutation(
     'updateAnnouncement',
@@ -233,29 +216,19 @@ const ModalForm = (props: {
         .items('announcement')
         .updateOne(infos.id as number, {
           description: infos.description,
-          tags: infos.tags as PartialItem<ITag>[],
+          tags: handleUpdateTags() as any,
           gallery: handleUpdateGallery() as any,
-          // {
-          // update: (galleryIds as string[]).map((res) => ({
-          //   directus_files_id: {
-          //     id: res,
-          //   },
-          // }
-          // )),
-          // },
+
           quantity: Math.round(Number(infos.quantity)),
           price: Math.round(Number(infos.price)),
           user: currentUser?.id,
           name: infos.name,
-          slug: `${slugify(infos.name)}-${format(
-            new Date(),
-            "yyyy-MM-dd'T'HH:mm:ss"
-          )}`,
         }),
     {
       onSuccess: () => {
         toast({ status: 'success', title: 'Annonce mis à jour avec succès' });
         props.fetchAnnouncements();
+        setInfos(defaultInfos);
         onClose();
       },
       onError: (err) => {
@@ -307,8 +280,6 @@ const ModalForm = (props: {
                     type="file"
                     accept="image/png, image/jpeg"
                     onChange={async (e) => {
-                      console.log(infos.gallery, e.target.files);
-                      console.log('CHANGECHANEGCAHNEGCHANGECAHNEG');
                       const formDatas: FormData[] = Object.values(
                         e.target.files as FileList
                       ).map((file) => {
@@ -340,12 +311,30 @@ const ModalForm = (props: {
                         right="-3"
                         ml={3}
                         fontSize="sm"
-                        onClick={() =>
+                        onClick={() => {
                           setInfos({
                             ...infos,
                             gallery: infos.gallery.filter((res) => res !== src),
-                          })
-                        }
+                          });
+                          setDeleteGalleryIds(
+                            (
+                              (props.announcement as PartialItem<IAnnouncement>)
+                                .gallery as PartialItem<IGallery>[]
+                            )
+                              .filter(
+                                (res) =>
+                                  !infos.gallery
+                                    .filter((res) => res !== src)
+                                    .includes(
+                                      `${API_URL}/assets/${
+                                        (res.directus_files_id as IFile)
+                                          .filename_disk as string
+                                      }`
+                                    )
+                              )
+                              .map((x) => x.id as number)
+                          );
+                        }}
                       />
                     </Box>
                   ))}
@@ -379,12 +368,14 @@ const ModalForm = (props: {
               tags={infos.tags}
               addTags={(id: number) => {
                 setInfos({ ...infos, tags: [...infos.tags, id] });
+                setCreateTagsIds([...createTagsIds, id]);
               }}
               removeTags={(id: number) => {
                 setInfos({
                   ...infos,
                   tags: infos.tags.filter((tagId) => tagId !== id),
                 });
+                setDeleteTagsIds([...deleteTagsIds, id]);
               }}
             />
 

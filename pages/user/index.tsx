@@ -374,7 +374,6 @@ const MyBookings = () => {
       enabled: Boolean(currentUser),
     }
   );
-  console.log(bookings);
 
   return (
     <Box>

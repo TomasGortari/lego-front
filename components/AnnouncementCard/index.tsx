@@ -18,7 +18,6 @@ const AnnouncementCard = (props: {
 }) => {
   const { announcement } = props;
   const directus = useDirectus();
-  console.log(announcement);
 
   return (
     <NextLink href={`/announcement/${announcement.slug}`} passHref>

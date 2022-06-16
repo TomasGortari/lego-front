@@ -4,6 +4,7 @@ import { IAnnouncement } from '../../@types/announcement';
 import { API_URL } from '../../config/config';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { IBooking } from '../../@types/booking';
+import { useRouter } from 'next/router';
 type BlogSettings = {
   display_promotions: boolean;
 };
@@ -16,10 +17,11 @@ export type IMyCollections = {
 };
 
 const useDirectus = () => {
+  const router = useRouter();
   const [directus, setDirectus] = useState<Directus<IMyCollections>>();
   useEffect(() => {
     setDirectus(new Directus<IMyCollections>(API_URL));
-  }, []);
+  }, [router.pathname]);
   return directus;
 };
 
